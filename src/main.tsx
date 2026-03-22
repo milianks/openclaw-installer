@@ -4,9 +4,11 @@ import App from './App';
 import './styles/globals.css';
 // 确保 logger 初始化（会在控制台显示启动信息）
 import './lib/logger';
+// 初始化 i18n
+import './i18n';
 
 console.log(
-  '%c🦞 OpenClaw Manager  启动',
+  '%c🦞 虾池子  启动',
   'background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; font-size: 16px; padding: 8px 16px; border-radius: 4px; font-weight: bold;'
 );
 console.log(

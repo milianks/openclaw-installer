@@ -1,8 +1,9 @@
 import { useEffect, useState, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { 
-  Trash2, 
-  RefreshCw, 
+import {
+  Trash2,
+  RefreshCw,
   Download,
   Filter,
   Terminal,
@@ -13,7 +14,7 @@ import { logStore, LogEntry } from '../../lib/logger';
 type FilterLevel = 'all' | 'debug' | 'info' | 'warn' | 'error';
 
 const LEVEL_COLORS: Record<string, string> = {
-  debug: 'text-gray-400',
+  debug: 'text-content-secondary',
   info: 'text-green-400',
   warn: 'text-yellow-400',
   error: 'text-red-400',
@@ -39,6 +40,7 @@ const MODULE_COLORS: Record<string, string> = {
 };
 
 export function Logs() {
+  const { t } = useTranslation();
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [filter, setFilter] = useState<FilterLevel>('all');
   const [moduleFilter, setModuleFilter] = useState<string>('all');
@@ -50,7 +52,7 @@ export function Logs() {
     const updateLogs = () => {
       setLogs(logStore.getAll());
     };
-    
+
     updateLogs(); // 初始加载
     return logStore.subscribe(updateLogs);
   }, []);
@@ -120,7 +122,7 @@ export function Logs() {
         return String(arg);
       }).join(' ');
     } catch {
-      return '[无法序列化]';
+      return t('logs.cannotSerialize');
     }
   };
 
@@ -130,13 +132,13 @@ export function Logs() {
       <div className="flex items-center gap-4 mb-4 flex-wrap">
         {/* 级别过滤 */}
         <div className="flex items-center gap-2">
-          <Filter size={14} className="text-gray-500" />
+          <Filter size={14} className="text-content-tertiary" />
           <select
             value={filter}
             onChange={(e) => setFilter(e.target.value as FilterLevel)}
-            className="bg-dark-700 border border-dark-500 rounded-lg px-3 py-1.5 text-sm text-gray-300"
+            className="bg-surface-card border border-edge rounded-lg px-3 py-1.5 text-sm text-content-secondary"
           >
-            <option value="all">所有级别</option>
+            <option value="all">{t('logs.allLevels')}</option>
             <option value="debug">Debug</option>
             <option value="info">Info</option>
             <option value="warn">Warn</option>
@@ -148,9 +150,9 @@ export function Logs() {
         <select
           value={moduleFilter}
           onChange={(e) => setModuleFilter(e.target.value)}
-          className="bg-dark-700 border border-dark-500 rounded-lg px-3 py-1.5 text-sm text-gray-300"
+          className="bg-surface-card border border-edge rounded-lg px-3 py-1.5 text-sm text-content-secondary"
         >
-          <option value="all">所有模块</option>
+          <option value="all">{t('logs.allModules')}</option>
           {modules.map(module => (
             <option key={module} value={module}>{module}</option>
           ))}
@@ -159,7 +161,7 @@ export function Logs() {
         <div className="flex-1" />
 
         {/* 统计 */}
-        <div className="flex items-center gap-3 text-xs text-gray-500">
+        <div className="flex items-center gap-3 text-xs text-content-tertiary">
           <span>{filteredLogs.length} / {logs.length} 条</span>
           <span className="text-red-400">{logs.filter(l => l.level === 'error').length} 错误</span>
           <span className="text-yellow-400">{logs.filter(l => l.level === 'warn').length} 警告</span>
@@ -167,32 +169,32 @@ export function Logs() {
 
         {/* 操作按钮 */}
         <div className="flex items-center gap-2">
-          <label className="flex items-center gap-1 text-xs text-gray-400">
+          <label className="flex items-center gap-1 text-xs text-content-secondary">
             <input
               type="checkbox"
               checked={autoScroll}
               onChange={(e) => setAutoScroll(e.target.checked)}
               className="w-3 h-3 rounded"
             />
-            自动滚动
+            {t('logs.autoScroll')}
           </label>
           <button
             onClick={handleExport}
-            className="icon-button text-gray-400 hover:text-white"
+            className="icon-button text-content-secondary hover:text-content-primary"
             title="导出日志"
           >
             <Download size={16} />
           </button>
           <button
             onClick={() => setLogs(logStore.getAll())}
-            className="icon-button text-gray-400 hover:text-white"
+            className="icon-button text-content-secondary hover:text-content-primary"
             title="刷新"
           >
             <RefreshCw size={16} />
           </button>
           <button
             onClick={handleClear}
-            className="icon-button text-gray-400 hover:text-red-400"
+            className="icon-button text-content-secondary hover:text-red-400"
             title="清除日志"
           >
             <Trash2 size={16} />
@@ -201,20 +203,20 @@ export function Logs() {
       </div>
 
       {/* 日志列表 */}
-      <div className="flex-1 bg-dark-800 rounded-xl border border-dark-600 overflow-hidden flex flex-col">
+      <div className="flex-1 bg-surface-sidebar rounded-xl border border-edge overflow-hidden flex flex-col">
         {/* 标题栏 */}
-        <div className="flex items-center gap-2 px-4 py-2 bg-dark-700 border-b border-dark-600">
-          <Terminal size={14} className="text-gray-500" />
-          <span className="text-xs text-gray-400 font-medium">应用日志</span>
+        <div className="flex items-center gap-2 px-4 py-2 bg-surface-card border-b border-edge">
+          <Terminal size={14} className="text-content-tertiary" />
+          <span className="text-xs text-content-secondary font-medium">应用日志</span>
         </div>
 
         {/* 日志内容 */}
         <div className="flex-1 overflow-y-auto p-2 font-mono text-xs">
           {filteredLogs.length === 0 ? (
-            <div className="h-full flex items-center justify-center text-gray-500">
+            <div className="h-full flex items-center justify-center text-content-tertiary">
               <div className="text-center">
                 <Terminal size={32} className="mx-auto mb-2 opacity-50" />
-                <p>暂无日志</p>
+                <p>{t('logs.noLogs')}</p>
               </div>
             </div>
           ) : (
@@ -241,16 +243,16 @@ export function Logs() {
                     </span>
                     <span className={clsx(
                       'flex-shrink-0',
-                      MODULE_COLORS[log.module] || 'text-gray-400'
+                      MODULE_COLORS[log.module] || 'text-content-secondary'
                     )}>
                       [{log.module}]
                     </span>
-                    <span className="text-gray-300 break-all">
+                    <span className="text-content-secondary break-all">
                       {log.message}
                     </span>
                   </div>
                   {log.args.length > 0 && (
-                    <div className="mt-1 ml-20 text-gray-500 break-all whitespace-pre-wrap">
+                    <div className="mt-1 ml-20 text-content-tertiary break-all whitespace-pre-wrap">
                       {formatArgs(log.args)}
                     </div>
                   )}
