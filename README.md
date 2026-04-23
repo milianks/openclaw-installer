@@ -130,7 +130,7 @@
 
 从 GitHub Releases 下载对应平台的安装包，无需配置开发环境。
 
-👉 **[下载最新版本](https://github.com/miaoxworld/openclaw-manager/releases/latest)**
+👉 **[下载最新版本](https://github.com/milianks/openclaw-installer/releases/latest)**
 
 | 平台 | 安装包格式 | 安装方式 |
 |------|-----------|---------|
@@ -182,8 +182,8 @@ sudo apt install libwebkit2gtk-4.1-dev build-essential curl wget file \
 
 ```bash
 # 克隆项目
-git clone https://github.com/miaoxworld/openclaw-manager.git
-cd openclaw-manager
+git clone https://github.com/milianks/openclaw-installer.git
+cd openclaw-installer
 
 # 安装依赖
 npm install
@@ -463,8 +463,8 @@ sudo dnf install webkit2gtk4.1-devel openssl-devel curl wget file libxdo-devel
 
 ```bash
 # Clone the project
-git clone https://github.com/miaoxworld/openclaw-manager.git
-cd openclaw-manager
+git clone https://github.com/milianks/openclaw-installer.git
+cd openclaw-installer
 
 # Install dependencies
 npm install
@@ -589,7 +589,7 @@ MIT License - See [LICENSE](LICENSE) for details
 
 ## 🔗 Links
 
-- [OpenClaw Manager](https://github.com/miaoxworld/openclaw-manager) - GUI version (this project)
+- [OpenClaw Manager](https://github.com/milianks/openclaw-installer) - GUI version (this project)
 - [OpenClawInstaller](https://github.com/miaoxworld/OpenClawInstaller) - CLI version
 - [Tauri Documentation](https://tauri.app/)
 - [React Documentation](https://react.dev/)

@@ -21,6 +21,7 @@ import {
   CheckCircle,
   XCircle,
   Pencil,
+  RefreshCw,
 } from 'lucide-react';
 import clsx from 'clsx';
 import { aiLogger } from '../../lib/logger';
@@ -104,38 +105,54 @@ interface ProviderDialogProps {
 function ProviderDialog({ officialProviders, onClose, onSave, editingProvider }: ProviderDialogProps) {
   const { t } = useTranslation();
   const isEditing = !!editingProvider;
-  const [step, setStep] = useState<'select' | 'configure'>(isEditing ? 'configure' : 'select');
+  const defaultOfficialProvider = officialProviders.find(provider => provider.id === 'builtin') || officialProviders[0] || null;
+  const [step, setStep] = useState<'select' | 'configure'>(() => {
+    if (isEditing) return 'configure';
+    return defaultOfficialProvider ? 'configure' : 'select';
+  });
   const [selectedOfficial, setSelectedOfficial] = useState<OfficialProvider | null>(() => {
     if (editingProvider) {
       return officialProviders.find(p =>
         editingProvider.name.includes(p.id) || p.id === editingProvider.name
       ) || null;
     }
-    return null;
+    return defaultOfficialProvider;
   });
 
   // 配置表单
-  const [providerName, setProviderName] = useState(editingProvider?.name || '');
-  const [baseUrl, setBaseUrl] = useState(editingProvider?.base_url || '');
+  const [providerName, setProviderName] = useState(editingProvider?.name || defaultOfficialProvider?.id || '');
+  const [baseUrl, setBaseUrl] = useState(editingProvider?.base_url || defaultOfficialProvider?.default_base_url || '');
   const [apiKey, setApiKey] = useState('');
   const [apiType, setApiType] = useState(() => {
     if (editingProvider) {
       const firstModel = editingProvider.models[0];
       return firstModel?.api_type || 'openai-completions';
     }
-    return 'openai-completions';
+    return defaultOfficialProvider?.api_type || 'openai-completions';
   });
   const [showApiKey, setShowApiKey] = useState(false);
   const [selectedModels, setSelectedModels] = useState<string[]>(() => {
     if (editingProvider) {
       return editingProvider.models.map(m => m.id);
     }
-    return [];
+    const recommended = defaultOfficialProvider?.suggested_models
+      .filter(m => m.recommended)
+      .map(m => m.id) || [];
+    return recommended.length > 0
+      ? recommended
+      : [defaultOfficialProvider?.suggested_models[0]?.id].filter(Boolean) as string[];
   });
   const [customModelId, setCustomModelId] = useState('');
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [showCustomUrlWarning, setShowCustomUrlWarning] = useState(false);
+  const [fetchedModels, setFetchedModels] = useState<SuggestedModel[]>(() => selectedOfficial?.suggested_models || []);
+  const [loadingModels, setLoadingModels] = useState(false);
+  const [modelLoadError, setModelLoadError] = useState<string | null>(null);
+
+  const resolvedSuggestedModels = fetchedModels.length > 0
+    ? fetchedModels
+    : (selectedOfficial?.suggested_models || []);
 
   // 检查是否是官方 Provider 名字但使用了自定义地址
   const isCustomUrlWithOfficialName = (() => {
@@ -151,6 +168,8 @@ function ProviderDialog({ officialProviders, onClose, onSave, editingProvider }:
     setProviderName(provider.id);
     setBaseUrl(provider.default_base_url || '');
     setApiType(provider.api_type);
+    setFetchedModels(provider.suggested_models);
+    setModelLoadError(null);
     // 预选推荐模型
     const recommended = provider.suggested_models.filter(m => m.recommended).map(m => m.id);
     setSelectedModels(recommended.length > 0 ? recommended : [provider.suggested_models[0]?.id].filter(Boolean));
@@ -165,9 +184,34 @@ function ProviderDialog({ officialProviders, onClose, onSave, editingProvider }:
     setBaseUrl('');
     setApiType('openai-completions');
     setSelectedModels([]);
+    setFetchedModels([]);
+    setModelLoadError(null);
     setFormError(null);
     setShowCustomUrlWarning(false);
     setStep('configure');
+  };
+
+  const handleFetchModels = async () => {
+    setLoadingModels(true);
+    setModelLoadError(null);
+    try {
+      const models = await invoke<SuggestedModel[]>('fetch_provider_models', {
+        baseUrl,
+        apiKey: apiKey || null,
+      });
+      setFetchedModels(models);
+      setSelectedModels(prev => {
+        const fetchedIds = new Set(models.map(model => model.id));
+        const kept = prev.filter(modelId => fetchedIds.has(modelId));
+        if (kept.length > 0) return kept;
+        const recommended = models.filter(model => model.recommended).map(model => model.id);
+        return recommended.length > 0 ? recommended : [models[0]?.id].filter(Boolean) as string[];
+      });
+    } catch (e) {
+      setModelLoadError(String(e));
+    } finally {
+      setLoadingModels(false);
+    }
   };
 
   const toggleModel = (modelId: string) => {
@@ -307,7 +351,9 @@ function ProviderDialog({ officialProviders, onClose, onSave, editingProvider }:
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-content-primary truncate">{provider.name}</p>
                           <p className="text-xs text-content-tertiary truncate">
-                            {provider.suggested_models.length} 个模型
+                            {provider.id === 'builtin'
+                              ? '/v1/models 自动获取'
+                              : `${provider.suggested_models.length} 个模型`}
                           </p>
                     </div>
                         <ChevronRight size={16} className="text-content-tertiary group-hover:text-claw-400 transition-colors" />
@@ -453,7 +499,7 @@ function ProviderDialog({ officialProviders, onClose, onSave, editingProvider }:
                   {/* 预设模型 */}
                   {selectedOfficial && (
                     <div className="space-y-2 mb-3">
-                      {selectedOfficial.suggested_models.map(model => (
+                      {resolvedSuggestedModels.map(model => (
                         <button
                           key={model.id}
                           onClick={() => toggleModel(model.id)}
@@ -506,10 +552,10 @@ function ProviderDialog({ officialProviders, onClose, onSave, editingProvider }:
                   </div>
 
                   {/* 已添加的自定义模型 */}
-                  {selectedModels.filter(id => !selectedOfficial?.suggested_models.find(m => m.id === id)).length > 0 && (
+                  {selectedModels.filter(id => !resolvedSuggestedModels.find(m => m.id === id)).length > 0 && (
                     <div className="mt-3 flex flex-wrap gap-2">
                       {selectedModels
-                        .filter(id => !selectedOfficial?.suggested_models.find(m => m.id === id))
+                        .filter(id => !resolvedSuggestedModels.find(m => m.id === id))
                         .map(modelId => (
                           <span
                             key={modelId}
@@ -524,6 +570,26 @@ function ProviderDialog({ officialProviders, onClose, onSave, editingProvider }:
                             </button>
                           </span>
                         ))}
+                    </div>
+                  )}
+
+                  {selectedOfficial?.api_type === 'openai-completions' && (
+                    <div className="mt-3 space-y-2">
+                      <button
+                        type="button"
+                        onClick={handleFetchModels}
+                        disabled={loadingModels || !baseUrl}
+                        className="btn-secondary flex items-center gap-2"
+                      >
+                        {loadingModels ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
+                        从 /v1/models 获取模型
+                      </button>
+                      <p className="text-xs text-content-tertiary">
+                        兼容 OpenAI 的 Provider 会优先读取 <code>/v1/models</code>，失败时回退到 <code>/v1/model</code>。
+                      </p>
+                      {modelLoadError && (
+                        <p className="text-xs text-red-400">{modelLoadError}</p>
+                      )}
                     </div>
                   )}
                 </div>

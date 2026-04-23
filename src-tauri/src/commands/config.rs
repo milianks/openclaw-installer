@@ -122,6 +122,125 @@ fn generate_token() -> String {
     )
 }
 
+fn builtin_provider() -> OfficialProvider {
+    OfficialProvider {
+        id: "builtin".to_string(),
+        name: "Built-in Provider".to_string(),
+        icon: "🏠".to_string(),
+        default_base_url: Some("http://124.174.11.230".to_string()),
+        api_type: "openai-completions".to_string(),
+        requires_api_key: true,
+        docs_url: None,
+        suggested_models: vec![],
+    }
+}
+
+fn build_model_discovery_urls(base_url: &str) -> Vec<String> {
+    let trimmed = base_url.trim().trim_end_matches('/');
+    if trimmed.is_empty() {
+        return Vec::new();
+    }
+
+    vec![
+        format!("{trimmed}/v1/models"),
+        format!("{trimmed}/v1/model"),
+    ]
+}
+
+fn parse_discovered_models(response: &str) -> Result<Vec<SuggestedModel>, String> {
+    let value: Value = serde_json::from_str(response)
+        .map_err(|e| format!("解析模型列表响应失败: {}", e))?;
+
+    if let Some(message) = value.get("message").and_then(|v| v.as_str()) {
+        return Err(message.to_string());
+    }
+
+    let data = value
+        .get("data")
+        .and_then(|v| v.as_array())
+        .ok_or_else(|| "模型列表响应缺少 data 数组".to_string())?;
+
+    let mut models = Vec::new();
+    for (index, item) in data.iter().enumerate() {
+        let id = item
+            .get("id")
+            .and_then(|v| v.as_str())
+            .filter(|id| !id.trim().is_empty())
+            .ok_or_else(|| "模型列表中存在缺少 id 的项".to_string())?;
+
+        let name = item
+            .get("name")
+            .and_then(|v| v.as_str())
+            .filter(|name| !name.trim().is_empty())
+            .unwrap_or(id);
+
+        models.push(SuggestedModel {
+            id: id.to_string(),
+            name: name.to_string(),
+            description: item
+                .get("owned_by")
+                .and_then(|v| v.as_str())
+                .map(|owner| format!("来自 {}", owner)),
+            context_window: None,
+            max_tokens: None,
+            recommended: index == 0,
+        });
+    }
+
+    if models.is_empty() {
+        return Err("模型列表为空".to_string());
+    }
+
+    Ok(models)
+}
+
+#[command]
+pub async fn fetch_provider_models(
+    base_url: String,
+    api_key: Option<String>,
+) -> Result<Vec<SuggestedModel>, String> {
+    let urls = build_model_discovery_urls(&base_url);
+    if urls.is_empty() {
+        return Err("API 地址不能为空".to_string());
+    }
+
+    let trimmed_key = api_key
+        .as_deref()
+        .map(str::trim)
+        .filter(|key| !key.is_empty())
+        .map(str::to_string);
+
+    let mut last_error = None;
+
+    for url in urls {
+        let mut args = vec![
+            "-sS".to_string(),
+            "-m".to_string(),
+            "10".to_string(),
+            "-H".to_string(),
+            "Accept: application/json".to_string(),
+        ];
+
+        if let Some(key) = trimmed_key.as_ref() {
+            args.push("-H".to_string());
+            args.push(format!("Authorization: Bearer {}", key));
+        }
+
+        args.push(url.clone());
+        let arg_refs: Vec<&str> = args.iter().map(|arg| arg.as_str()).collect();
+
+        match shell::run_command_output("curl", &arg_refs) {
+            Ok(output) => match parse_discovered_models(&output) {
+                Ok(models) => return Ok(models),
+                Err(err) => last_error = Some(format!("{}: {}", url, err)),
+            },
+            Err(err) => last_error = Some(format!("{}: {}", url, err)),
+        }
+    }
+
+    Err(last_error.unwrap_or_else(|| "获取模型列表失败".to_string()))
+}
+
 /// 获取或生成 Gateway Token
 #[command]
 pub async fn get_or_create_gateway_token() -> Result<String, String> {
@@ -184,6 +303,7 @@ pub async fn get_official_providers() -> Result<Vec<OfficialProvider>, String> {
     info!("[官方 Provider] 获取官方 Provider 预设列表...");
 
     let providers = vec![
+        builtin_provider(),
         OfficialProvider {
             id: "anthropic".to_string(),
             name: "Anthropic Claude".to_string(),
@@ -421,6 +541,61 @@ pub async fn get_official_providers() -> Result<Vec<OfficialProvider>, String> {
         providers.len()
     );
     Ok(providers)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{
+        build_model_discovery_urls, get_official_providers, parse_discovered_models,
+    };
+
+    #[tokio::test]
+    async fn official_providers_include_builtin_http_provider() {
+        let providers = get_official_providers().await.expect("official providers");
+        let provider = providers.first().expect("providers should not be empty");
+
+        assert_eq!(provider.id, "builtin");
+        assert_eq!(
+            provider.default_base_url.as_deref(),
+            Some("http://124.174.11.230")
+        );
+        assert_eq!(provider.api_type, "openai-completions");
+        assert!(provider.requires_api_key);
+        assert!(provider.suggested_models.is_empty());
+    }
+
+    #[test]
+    fn model_discovery_urls_try_models_then_model() {
+        let urls = build_model_discovery_urls("http://124.174.11.230/");
+
+        assert_eq!(
+            urls,
+            vec![
+                "http://124.174.11.230/v1/models".to_string(),
+                "http://124.174.11.230/v1/model".to_string()
+            ]
+        );
+    }
+
+    #[test]
+    fn parse_discovered_models_reads_openai_style_response() {
+        let response = r#"{
+            "object": "list",
+            "data": [
+                { "id": "gpt-4o-mini", "object": "model", "owned_by": "openai" },
+                { "id": "gpt-4.1", "object": "model", "owned_by": "openai" }
+            ]
+        }"#;
+
+        let models = parse_discovered_models(response).expect("models should parse");
+
+        assert_eq!(models.len(), 2);
+        assert_eq!(models[0].id, "gpt-4o-mini");
+        assert_eq!(models[0].name, "gpt-4o-mini");
+        assert!(models[0].recommended);
+        assert_eq!(models[1].id, "gpt-4.1");
+        assert!(!models[1].recommended);
+    }
 }
 
 /// 获取 AI 配置概览
@@ -2124,4 +2299,3 @@ pub async fn set_default_agent(agent_id: String) -> Result<String, String> {
     info!("[Agent 管理] ✓ 默认 Agent 已设为 {}", agent_id);
     Ok(format!("默认 Agent 已设为 {}", agent_id))
 }
-
