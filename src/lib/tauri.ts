@@ -69,6 +69,7 @@ export interface OfficialProvider {
   icon: string;
   default_base_url: string | null;
   api_type: ApiType;
+  selected_by_default: boolean;
   supports_model_discovery: boolean;
   suggested_models: SuggestedModel[];
   requires_api_key: boolean;

@@ -45,6 +45,7 @@ interface OfficialProvider {
   icon: string;
   default_base_url: string | null;
   api_type: ApiType;
+  selected_by_default: boolean;
   supports_model_discovery: boolean;
   suggested_models: SuggestedModel[];
   requires_api_key: boolean;
@@ -108,7 +109,7 @@ interface ProviderDialogProps {
 function ProviderDialog({ officialProviders, onClose, onSave, editingProvider }: ProviderDialogProps) {
   const { t } = useTranslation();
   const isEditing = !!editingProvider;
-  const defaultOfficialProvider = officialProviders.find(provider => provider.id === 'builtin') || officialProviders[0] || null;
+  const defaultOfficialProvider = officialProviders.find(provider => provider.selected_by_default) || officialProviders[0] || null;
   const [step, setStep] = useState<'select' | 'configure'>(() => {
     if (isEditing) return 'configure';
     return defaultOfficialProvider ? 'configure' : 'select';

@@ -183,6 +183,9 @@ pub struct OfficialProvider {
     pub default_base_url: Option<String>,
     /// API 类型
     pub api_type: String,
+    /// 新增 Provider 时是否默认选中
+    #[serde(default)]
+    pub selected_by_default: bool,
     /// 是否支持模型发现 (/v1/models)
     #[serde(default)]
     pub supports_model_discovery: bool,
