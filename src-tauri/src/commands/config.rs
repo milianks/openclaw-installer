@@ -129,6 +129,7 @@ fn builtin_provider() -> OfficialProvider {
         icon: "🏠".to_string(),
         default_base_url: Some("http://124.174.11.230".to_string()),
         api_type: "openai-completions".to_string(),
+        supports_model_discovery: true,
         requires_api_key: true,
         docs_url: None,
         suggested_models: vec![],
@@ -310,6 +311,7 @@ pub async fn get_official_providers() -> Result<Vec<OfficialProvider>, String> {
             icon: "🟣".to_string(),
             default_base_url: Some("https://api.anthropic.com".to_string()),
             api_type: "anthropic-messages".to_string(),
+            supports_model_discovery: false,
             requires_api_key: true,
             docs_url: Some("https://docs.openclaw.ai/providers/anthropic".to_string()),
             suggested_models: vec![
@@ -336,7 +338,8 @@ pub async fn get_official_providers() -> Result<Vec<OfficialProvider>, String> {
             name: "OpenAI".to_string(),
             icon: "🟢".to_string(),
             default_base_url: Some("https://api.openai.com/v1".to_string()),
-            api_type: "openai-completions".to_string(),
+            api_type: "openai-responses".to_string(),
+            supports_model_discovery: true,
             requires_api_key: true,
             docs_url: Some("https://docs.openclaw.ai/providers/openai".to_string()),
             suggested_models: vec![
@@ -364,6 +367,7 @@ pub async fn get_official_providers() -> Result<Vec<OfficialProvider>, String> {
             icon: "🌙".to_string(),
             default_base_url: Some("https://api.moonshot.cn/v1".to_string()),
             api_type: "openai-completions".to_string(),
+            supports_model_discovery: true,
             requires_api_key: true,
             docs_url: Some("https://docs.openclaw.ai/providers/moonshot".to_string()),
             suggested_models: vec![
@@ -391,6 +395,7 @@ pub async fn get_official_providers() -> Result<Vec<OfficialProvider>, String> {
             icon: "🔮".to_string(),
             default_base_url: Some("https://dashscope.aliyuncs.com/compatible-mode/v1".to_string()),
             api_type: "openai-completions".to_string(),
+            supports_model_discovery: true,
             requires_api_key: true,
             docs_url: Some("https://docs.openclaw.ai/providers/qwen".to_string()),
             suggested_models: vec![
@@ -418,6 +423,7 @@ pub async fn get_official_providers() -> Result<Vec<OfficialProvider>, String> {
             icon: "🔵".to_string(),
             default_base_url: Some("https://api.deepseek.com".to_string()),
             api_type: "openai-completions".to_string(),
+            supports_model_discovery: true,
             requires_api_key: true,
             docs_url: None,
             suggested_models: vec![
@@ -445,6 +451,7 @@ pub async fn get_official_providers() -> Result<Vec<OfficialProvider>, String> {
             icon: "🔷".to_string(),
             default_base_url: Some("https://open.bigmodel.cn/api/paas/v4".to_string()),
             api_type: "openai-completions".to_string(),
+            supports_model_discovery: true,
             requires_api_key: true,
             docs_url: Some("https://docs.openclaw.ai/providers/glm".to_string()),
             suggested_models: vec![
@@ -464,6 +471,7 @@ pub async fn get_official_providers() -> Result<Vec<OfficialProvider>, String> {
             icon: "🟡".to_string(),
             default_base_url: Some("https://api.minimax.io/anthropic".to_string()),
             api_type: "anthropic-messages".to_string(),
+            supports_model_discovery: false,
             requires_api_key: true,
             docs_url: Some("https://docs.openclaw.ai/providers/minimax".to_string()),
             suggested_models: vec![
@@ -483,6 +491,7 @@ pub async fn get_official_providers() -> Result<Vec<OfficialProvider>, String> {
             icon: "🏛️".to_string(),
             default_base_url: Some("https://api.venice.ai/api/v1".to_string()),
             api_type: "openai-completions".to_string(),
+            supports_model_discovery: true,
             requires_api_key: true,
             docs_url: Some("https://docs.openclaw.ai/providers/venice".to_string()),
             suggested_models: vec![
@@ -502,6 +511,7 @@ pub async fn get_official_providers() -> Result<Vec<OfficialProvider>, String> {
             icon: "🔄".to_string(),
             default_base_url: Some("https://openrouter.ai/api/v1".to_string()),
             api_type: "openai-completions".to_string(),
+            supports_model_discovery: true,
             requires_api_key: true,
             docs_url: Some("https://docs.openclaw.ai/providers/openrouter".to_string()),
             suggested_models: vec![
@@ -521,6 +531,7 @@ pub async fn get_official_providers() -> Result<Vec<OfficialProvider>, String> {
             icon: "🟠".to_string(),
             default_base_url: Some("http://localhost:11434".to_string()),
             api_type: "openai-completions".to_string(),
+            supports_model_discovery: true,
             requires_api_key: false,
             docs_url: Some("https://docs.openclaw.ai/providers/ollama".to_string()),
             suggested_models: vec![
@@ -546,8 +557,53 @@ pub async fn get_official_providers() -> Result<Vec<OfficialProvider>, String> {
 #[cfg(test)]
 mod tests {
     use super::{
-        build_model_discovery_urls, get_official_providers, parse_discovered_models,
+        build_model_discovery_urls, get_ai_config, get_official_providers, parse_discovered_models,
+        save_provider,
     };
+    use crate::models::ModelConfig;
+    use std::fs;
+    use std::path::PathBuf;
+    use std::sync::{LazyLock, Mutex};
+
+    static ENV_LOCK: LazyLock<Mutex<()>> = LazyLock::new(|| Mutex::new(()));
+
+    struct TempHomeGuard {
+        previous_home: Option<std::ffi::OsString>,
+        temp_home: PathBuf,
+    }
+
+    impl TempHomeGuard {
+        fn new(test_name: &str) -> Self {
+            let temp_home = std::env::temp_dir().join(format!(
+                "openclaw-manager-tests-{}-{}-{}",
+                std::process::id(),
+                test_name,
+                chrono::Utc::now().timestamp_nanos_opt().unwrap_or_default()
+            ));
+
+            fs::create_dir_all(&temp_home).expect("temp home should be created");
+
+            let previous_home = std::env::var_os("HOME");
+            std::env::set_var("HOME", &temp_home);
+
+            Self {
+                previous_home,
+                temp_home,
+            }
+        }
+    }
+
+    impl Drop for TempHomeGuard {
+        fn drop(&mut self) {
+            if let Some(previous_home) = self.previous_home.as_ref() {
+                std::env::set_var("HOME", previous_home);
+            } else {
+                std::env::remove_var("HOME");
+            }
+
+            let _ = fs::remove_dir_all(&self.temp_home);
+        }
+    }
 
     #[tokio::test]
     async fn official_providers_include_builtin_http_provider() {
@@ -562,6 +618,73 @@ mod tests {
         assert_eq!(provider.api_type, "openai-completions");
         assert!(provider.requires_api_key);
         assert!(provider.suggested_models.is_empty());
+    }
+
+    #[tokio::test]
+    async fn official_openai_provider_defaults_to_responses_api() {
+        let providers = get_official_providers().await.expect("official providers");
+        let provider = providers
+            .iter()
+            .find(|provider| provider.id == "openai")
+            .expect("openai provider should exist");
+
+        assert_eq!(provider.api_type, "openai-responses");
+    }
+
+    #[tokio::test]
+    async fn official_openai_provider_exposes_model_discovery_capability() {
+        let providers = get_official_providers().await.expect("official providers");
+        let provider = providers
+            .iter()
+            .find(|provider| provider.id == "openai")
+            .expect("openai provider should exist");
+        let value = serde_json::to_value(provider).expect("provider should serialize");
+
+        assert_eq!(
+            value
+                .get("supports_model_discovery")
+                .and_then(|v| v.as_bool()),
+            Some(true)
+        );
+    }
+
+    #[tokio::test]
+    async fn save_provider_and_get_ai_config_round_trip_openai_responses_api() {
+        let _lock = ENV_LOCK.lock().expect("env lock should be acquired");
+        let _temp_home = TempHomeGuard::new("openai-responses-roundtrip");
+
+        save_provider(
+            "openai".to_string(),
+            "https://api.openai.com/v1".to_string(),
+            Some("test-key".to_string()),
+            "openai-responses".to_string(),
+            vec![ModelConfig {
+                id: "gpt-4.1".to_string(),
+                name: "GPT-4.1".to_string(),
+                api: Some("openai-responses".to_string()),
+                input: vec!["text".to_string()],
+                context_window: Some(128000),
+                max_tokens: Some(4096),
+                reasoning: Some(false),
+                cost: None,
+            }],
+        )
+        .await
+        .expect("provider should save");
+
+        let overview = get_ai_config().await.expect("ai config should load");
+        let provider = overview
+            .configured_providers
+            .iter()
+            .find(|provider| provider.name == "openai")
+            .expect("saved provider should exist");
+        let model = provider
+            .models
+            .iter()
+            .find(|model| model.id == "gpt-4.1")
+            .expect("saved model should exist");
+
+        assert_eq!(model.api_type.as_deref(), Some("openai-responses"));
     }
 
     #[test]

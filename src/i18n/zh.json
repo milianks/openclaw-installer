@@ -149,6 +149,7 @@
     "keepApiKeyHint": "如果不需要更改 API Key，请保持为空",
     "apiType": "API 类型",
     "openaiCompat": "OpenAI 兼容 (openai-completions)",
+    "openaiResponses": "OpenAI Responses 格式 (openai-responses)",
     "anthropicCompat": "Anthropic 兼容 (anthropic-messages)",
     "selectModels": "选择模型",
     "selectedCount": "已选 {{count}} 个",

@@ -28,6 +28,8 @@ import { aiLogger } from '../../lib/logger';
 
 // ============ 类型定义 ============
 
+type ApiType = 'openai-completions' | 'anthropic-messages' | 'openai-responses';
+
 interface SuggestedModel {
   id: string;
   name: string;
@@ -42,7 +44,8 @@ interface OfficialProvider {
   name: string;
   icon: string;
   default_base_url: string | null;
-  api_type: string;
+  api_type: ApiType;
+  supports_model_discovery: boolean;
   suggested_models: SuggestedModel[];
   requires_api_key: boolean;
   docs_url: string | null;
@@ -52,7 +55,7 @@ interface ConfiguredModel {
   full_id: string;
   id: string;
   name: string;
-  api_type: string | null;
+  api_type: ApiType | null;
   context_window: number | null;
   max_tokens: number | null;
   is_primary: boolean;
@@ -75,7 +78,7 @@ interface AIConfigOverview {
 interface ModelConfig {
   id: string;
   name: string;
-  api: string | null;
+  api: ApiType | null;
   input: string[];
   context_window: number | null;
   max_tokens: number | null;
@@ -123,7 +126,7 @@ function ProviderDialog({ officialProviders, onClose, onSave, editingProvider }:
   const [providerName, setProviderName] = useState(editingProvider?.name || defaultOfficialProvider?.id || '');
   const [baseUrl, setBaseUrl] = useState(editingProvider?.base_url || defaultOfficialProvider?.default_base_url || '');
   const [apiKey, setApiKey] = useState('');
-  const [apiType, setApiType] = useState(() => {
+  const [apiType, setApiType] = useState<ApiType>(() => {
     if (editingProvider) {
       const firstModel = editingProvider.models[0];
       return firstModel?.api_type || 'openai-completions';
@@ -153,6 +156,9 @@ function ProviderDialog({ officialProviders, onClose, onSave, editingProvider }:
   const resolvedSuggestedModels = fetchedModels.length > 0
     ? fetchedModels
     : (selectedOfficial?.suggested_models || []);
+  const supportsModelDiscovery = selectedOfficial
+    ? selectedOfficial.supports_model_discovery
+    : apiType !== 'anthropic-messages';
 
   // 检查是否是官方 Provider 名字但使用了自定义地址
   const isCustomUrlWithOfficialName = (() => {
@@ -479,10 +485,11 @@ function ProviderDialog({ officialProviders, onClose, onSave, editingProvider }:
                   <label className="block text-sm text-content-secondary mb-2">API 类型</label>
                   <select
                     value={apiType}
-                    onChange={e => setApiType(e.target.value)}
+                    onChange={e => setApiType(e.target.value as ApiType)}
                     className="input-base"
                   >
                     <option value="openai-completions">{t('aiConfig.openaiCompat')}</option>
+                    <option value="openai-responses">{t('aiConfig.openaiResponses')}</option>
                     <option value="anthropic-messages">{t('aiConfig.anthropicCompat')}</option>
                   </select>
                 </div>
@@ -573,7 +580,7 @@ function ProviderDialog({ officialProviders, onClose, onSave, editingProvider }:
                     </div>
                   )}
 
-                  {selectedOfficial?.api_type === 'openai-completions' && (
+                  {supportsModelDiscovery && (
                     <div className="mt-3 space-y-2">
                       <button
                         type="button"

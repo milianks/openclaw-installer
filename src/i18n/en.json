@@ -149,6 +149,7 @@
     "keepApiKeyHint": "Leave empty if you don't need to change the API Key",
     "apiType": "API Type",
     "openaiCompat": "OpenAI Compatible (openai-completions)",
+    "openaiResponses": "OpenAI Responses (openai-responses)",
     "anthropicCompat": "Anthropic Compatible (anthropic-messages)",
     "selectModels": "Select Models",
     "selectedCount": "{{count}} selected",

@@ -61,12 +61,15 @@ export interface AIModelOption {
 }
 
 // 官方 Provider 预设
+export type ApiType = 'openai-completions' | 'anthropic-messages' | 'openai-responses';
+
 export interface OfficialProvider {
   id: string;
   name: string;
   icon: string;
   default_base_url: string | null;
-  api_type: string;
+  api_type: ApiType;
+  supports_model_discovery: boolean;
   suggested_models: SuggestedModel[];
   requires_api_key: boolean;
   docs_url: string | null;
@@ -94,7 +97,7 @@ export interface ConfiguredModel {
   full_id: string;
   id: string;
   name: string;
-  api_type: string | null;
+  api_type: ApiType | null;
   context_window: number | null;
   max_tokens: number | null;
   is_primary: boolean;
@@ -111,7 +114,7 @@ export interface AIConfigOverview {
 export interface ModelConfig {
   id: string;
   name: string;
-  api: string | null;
+  api: ApiType | null;
   input: string[];
   context_window: number | null;
   max_tokens: number | null;
@@ -176,7 +179,7 @@ export const api = {
     providerName: string,
     baseUrl: string,
     apiKey: string | null,
-    apiType: string,
+    apiType: ApiType,
     models: ModelConfig[]
   ) =>
     invokeWithLog<string>('save_provider', {

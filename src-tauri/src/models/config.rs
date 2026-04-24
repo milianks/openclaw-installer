@@ -95,7 +95,7 @@ pub struct ModelConfig {
     pub id: String,
     /// 显示名称
     pub name: String,
-    /// API 类型 (anthropic-messages / openai-completions)
+    /// API 类型 (anthropic-messages / openai-completions / openai-responses)
     #[serde(default)]
     pub api: Option<String>,
     /// 支持的输入类型
@@ -183,6 +183,9 @@ pub struct OfficialProvider {
     pub default_base_url: Option<String>,
     /// API 类型
     pub api_type: String,
+    /// 是否支持模型发现 (/v1/models)
+    #[serde(default)]
+    pub supports_model_discovery: bool,
     /// 推荐模型列表
     pub suggested_models: Vec<SuggestedModel>,
     /// 是否需要 API Key
@@ -435,4 +438,3 @@ pub struct AgentBinding {
     #[serde(rename = "accountId")]
     pub account_id: Option<String>,
 }
-
