@@ -126,9 +126,9 @@ fn builtin_provider() -> OfficialProvider {
         id: "builtin".to_string(),
         name: "Built-in Provider".to_string(),
         icon: "🏠".to_string(),
-        default_base_url: Some("http://124.174.11.230".to_string()),
+        default_base_url: Some("http://124.174.11.230/v1".to_string()),
         api_type: "openai-completions".to_string(),
-        selected_by_default: false,
+        selected_by_default: true,
         supports_model_discovery: true,
         requires_api_key: true,
         docs_url: None,
@@ -142,9 +142,11 @@ fn build_model_discovery_urls(base_url: &str) -> Vec<String> {
         return Vec::new();
     }
 
+    let normalized = trimmed.strip_suffix("/v1").unwrap_or(trimmed);
+
     vec![
-        format!("{trimmed}/v1/models"),
-        format!("{trimmed}/v1/model"),
+        format!("{normalized}/v1/models"),
+        format!("{normalized}/v1/model"),
     ]
 }
 
@@ -340,7 +342,7 @@ pub async fn get_official_providers() -> Result<Vec<OfficialProvider>, String> {
             icon: "🟢".to_string(),
             default_base_url: Some("https://api.openai.com/v1".to_string()),
             api_type: "openai-responses".to_string(),
-            selected_by_default: true,
+            selected_by_default: false,
             supports_model_discovery: true,
             requires_api_key: true,
             docs_url: Some("https://docs.openclaw.ai/providers/openai".to_string()),
@@ -613,9 +615,10 @@ mod tests {
         assert_eq!(provider.id, "builtin");
         assert_eq!(
             provider.default_base_url.as_deref(),
-            Some("http://124.174.11.230")
+            Some("http://124.174.11.230/v1")
         );
         assert_eq!(provider.api_type, "openai-completions");
+        assert!(provider.selected_by_default);
         assert!(provider.requires_api_key);
         assert!(provider.suggested_models.is_empty());
     }
@@ -649,7 +652,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn official_openai_provider_is_selected_by_default() {
+    async fn official_openai_provider_is_not_selected_by_default() {
         let providers = get_official_providers().await.expect("official providers");
         let provider = providers
             .iter()
@@ -659,7 +662,7 @@ mod tests {
 
         assert_eq!(
             value.get("selected_by_default").and_then(|v| v.as_bool()),
-            Some(true)
+            Some(false)
         );
     }
 
@@ -705,6 +708,19 @@ mod tests {
     #[test]
     fn model_discovery_urls_try_models_then_model() {
         let urls = build_model_discovery_urls("http://124.174.11.230/");
+
+        assert_eq!(
+            urls,
+            vec![
+                "http://124.174.11.230/v1/models".to_string(),
+                "http://124.174.11.230/v1/model".to_string()
+            ]
+        );
+    }
+
+    #[test]
+    fn model_discovery_urls_do_not_duplicate_v1_suffix() {
+        let urls = build_model_discovery_urls("http://124.174.11.230/v1");
 
         assert_eq!(
             urls,
