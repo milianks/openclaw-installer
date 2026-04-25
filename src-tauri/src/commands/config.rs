@@ -2,7 +2,7 @@ use crate::models::{
     AIConfigOverview, ChannelConfig, ConfiguredModel, ConfiguredProvider, ModelConfig,
     OfficialProvider, SuggestedModel,
 };
-use crate::utils::{file, platform, shell};
+use crate::utils::{file, platform, security, shell};
 use log::{debug, error, info, warn};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -102,23 +102,21 @@ pub async fn save_env_value(key: String, value: String) -> Result<String, String
 
 // ============ Gateway Token 命令 ============
 
-/// 生成随机 token
-fn generate_token() -> String {
-    use std::time::{SystemTime, UNIX_EPOCH};
+pub(crate) fn set_gateway_token_in_config(token: &str) -> Result<(), String> {
+    let mut config = load_openclaw_config()?;
 
-    let timestamp = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_nanos();
+    if config.get("gateway").is_none() {
+        config["gateway"] = json!({});
+    }
+    if config["gateway"].get("auth").is_none() {
+        config["gateway"]["auth"] = json!({});
+    }
 
-    // 使用时间戳和随机数生成 token
-    let random_part: u64 = (timestamp as u64) ^ 0x5DEECE66Du64;
-    format!(
-        "{:016x}{:016x}{:016x}",
-        random_part,
-        random_part.wrapping_mul(0x5DEECE66Du64),
-        timestamp as u64
-    )
+    config["gateway"]["auth"]["token"] = json!(token);
+    config["gateway"]["auth"]["mode"] = json!("token");
+    config["gateway"]["mode"] = json!("local");
+
+    save_openclaw_config(&config)
 }
 
 fn builtin_provider() -> OfficialProvider {
@@ -249,38 +247,25 @@ pub async fn fetch_provider_models(
 pub async fn get_or_create_gateway_token() -> Result<String, String> {
     info!("[Gateway Token] 获取或创建 Gateway Token...");
 
-    let mut config = load_openclaw_config()?;
+    let config = load_openclaw_config()?;
 
     // 检查是否已有 token
     if let Some(token) = config
         .pointer("/gateway/auth/token")
         .and_then(|v| v.as_str())
     {
-        if !token.is_empty() {
+        if !token.is_empty() && token != shell::DEFAULT_GATEWAY_TOKEN {
             info!("[Gateway Token] ✓ 使用现有 Token");
             return Ok(token.to_string());
         }
     }
 
     // 生成新 token
-    let new_token = generate_token();
+    let new_token = security::generate_secure_token()?;
     info!("[Gateway Token] 生成新 Token: {}...", &new_token[..8]);
 
-    // 确保路径存在
-    if config.get("gateway").is_none() {
-        config["gateway"] = json!({});
-    }
-    if config["gateway"].get("auth").is_none() {
-        config["gateway"]["auth"] = json!({});
-    }
-
-    // 设置 token 和 mode
-    config["gateway"]["auth"]["token"] = json!(new_token);
-    config["gateway"]["auth"]["mode"] = json!("token");
-    config["gateway"]["mode"] = json!("local");
-
     // 保存配置
-    save_openclaw_config(&config)?;
+    set_gateway_token_in_config(&new_token)?;
 
     info!("[Gateway Token] ✓ Token 已保存到配置");
     Ok(new_token)
@@ -565,9 +550,10 @@ mod tests {
     use crate::models::ModelConfig;
     use std::fs;
     use std::path::PathBuf;
-    use std::sync::{LazyLock, Mutex};
+    use std::sync::LazyLock;
 
-    static ENV_LOCK: LazyLock<Mutex<()>> = LazyLock::new(|| Mutex::new(()));
+    static ENV_LOCK: LazyLock<tokio::sync::Mutex<()>> =
+        LazyLock::new(|| tokio::sync::Mutex::new(()));
 
     struct TempHomeGuard {
         previous_home: Option<std::ffi::OsString>,
@@ -668,7 +654,7 @@ mod tests {
 
     #[tokio::test]
     async fn save_provider_and_get_ai_config_round_trip_openai_responses_api() {
-        let _lock = ENV_LOCK.lock().expect("env lock should be acquired");
+        let _lock = ENV_LOCK.lock().await;
         let _temp_home = TempHomeGuard::new("openai-responses-roundtrip");
 
         save_provider(
@@ -1289,7 +1275,7 @@ pub async fn save_channel_config(channel: ChannelConfig) -> Result<String, Strin
     }
 
     // 这些字段只用于测试，不保存到 openclaw.json，而是保存到 env 文件
-    let test_only_fields = vec!["userId", "testChatId", "testChannelId"];
+    let test_only_fields = ["userId", "testChatId", "testChannelId"];
 
     // 构建渠道配置
     let mut channel_obj = json!({
@@ -1430,7 +1416,7 @@ pub async fn check_feishu_plugin() -> Result<FeishuPluginStatus, String> {
 
                 // 尝试解析版本号（通常格式为 "name@version" 或 "name version"）
                 let version = if line.contains('@') {
-                    line.split('@').last().map(|s| s.trim().to_string())
+                    line.split('@').next_back().map(|s| s.trim().to_string())
                 } else {
                     // 尝试匹配版本号模式 (如 0.1.2)
                     let parts: Vec<&str> = line.split_whitespace().collect();
@@ -1547,7 +1533,7 @@ pub async fn check_qqbot_plugin() -> Result<QQBotPluginStatus, String> {
 
                 // 尝试解析版本号
                 let version = if line.contains('@') {
-                    line.split('@').last().map(|s| s.trim().to_string())
+                    line.split('@').next_back().map(|s| s.trim().to_string())
                 } else {
                     let parts: Vec<&str> = line.split_whitespace().collect();
                     parts

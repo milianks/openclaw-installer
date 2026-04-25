@@ -282,6 +282,14 @@ npm run tauri build      # 构建完整应用
 cd src-tauri && cargo check   # 检查 Rust 代码
 ```
 
+### npm 镜像
+
+安装 OpenClaw 或技能时，Manager 会默认使用 `https://registry.npmmirror.com`，以提升中国大陆网络环境下的成功率。若需要覆盖镜像，可在启动应用前设置：
+
+```bash
+export OPENCLAW_NPM_REGISTRY=https://registry.npmjs.org
+```
+
 ## 🤝 贡献指南
 
 1. Fork 项目

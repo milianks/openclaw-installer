@@ -23,6 +23,9 @@ const LOG_LEVELS: Record<LogLevel, number> = {
   error: 3,
 };
 
+const REDACTED = '[REDACTED]';
+const SENSITIVE_KEY_PATTERN = /(api[_-]?key|token|secret|password|authorization|credential)/i;
+
 // 日志存储
 class LogStore {
   private logs: LogEntry[] = [];
@@ -72,9 +75,41 @@ const getCurrentLevel = (): LogLevel => {
       return level;
     }
   }
-  // 默认 debug 级别（开发时显示所有日志）
-  return 'debug';
+  // 开发环境显示详细日志；生产环境默认只保留警告/错误，避免泄露凭据。
+  return import.meta.env.DEV ? 'debug' : 'warn';
 };
+
+function redactSensitiveData(value: unknown, key = '', depth = 0): unknown {
+  if (SENSITIVE_KEY_PATTERN.test(key)) {
+    return value ? REDACTED : value;
+  }
+
+  if (depth > 6 || value === null || value === undefined) {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    if (/bearer\s+[a-z0-9._~+/=-]+/i.test(value)) {
+      return value.replace(/bearer\s+[a-z0-9._~+/=-]+/gi, `Bearer ${REDACTED}`);
+    }
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => redactSensitiveData(item, key, depth + 1));
+  }
+
+  if (typeof value === 'object') {
+    if (value instanceof Date) return value;
+    const result: Record<string, unknown> = {};
+    for (const [childKey, childValue] of Object.entries(value as Record<string, unknown>)) {
+      result[childKey] = redactSensitiveData(childValue, childKey, depth + 1);
+    }
+    return result;
+  }
+
+  return value;
+}
 
 // 日志样式
 const STYLES: Record<LogLevel, string> = {
@@ -114,6 +149,7 @@ class Logger {
 
   private formatMessage(level: LogLevel, message: string, ...args: unknown[]): void {
     if (!this.shouldLog(level)) return;
+    const safeArgs = args.map((arg) => redactSensitiveData(arg));
 
     const now = new Date();
     const timestamp = now.toLocaleTimeString('zh-CN', { 
@@ -134,7 +170,7 @@ class Logger {
       `color: ${moduleColor}; font-weight: bold`,
       '',
       STYLES[level],
-      ...args
+      ...safeArgs
     );
 
     // 存储日志
@@ -143,7 +179,7 @@ class Logger {
       level,
       module: this.module,
       message,
-      args,
+      args: safeArgs,
     });
   }
 
@@ -212,7 +248,7 @@ export const testingLogger = createLogger('Testing');
 export const apiLogger = createLogger('API');
 
 // 在控制台暴露日志控制函数
-if (typeof window !== 'undefined') {
+if (typeof window !== 'undefined' && import.meta.env.DEV) {
   (window as unknown as Record<string, unknown>).setLogLevel = setLogLevel;
   (window as unknown as Record<string, unknown>).logStore = logStore;
   console.log(

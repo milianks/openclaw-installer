@@ -706,7 +706,7 @@ export function Channels() {
     const requiredFields = info.fields.filter((f) => f.required);
     if (requiredFields.length === 0) return channel.enabled;
 
-    return requiredFields.some((field) => {
+    return requiredFields.every((field) => {
       const value = channel.config[field.key];
       return value !== undefined && value !== null && value !== '';
     });

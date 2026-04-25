@@ -1,3 +1,6 @@
+# ai-helper
+.omx
+
 # Dependencies
 node_modules/
 
@@ -27,4 +30,7 @@ npm-debug.log*
 
 # Tauri
 src-tauri/target/
-src-tauri/Cargo.lock
+
+# build artifacts
+dist-*
+release/

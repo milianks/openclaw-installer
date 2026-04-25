@@ -12,16 +12,12 @@ use commands::{config, diagnostics, installer, process, service};
 
 fn main() {
     // 初始化日志 - 默认显示 info 级别日志
-    env_logger::Builder::from_env(
-        env_logger::Env::default().default_filter_or("info")
-    ).init();
-    
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
+
     log::info!("🦞 OpenClaw Manager 启动");
 
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
-        .plugin(tauri_plugin_fs::init())
-        .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_notification::init())
         .invoke_handler(tauri::generate_handler![
             // 服务管理
@@ -34,6 +30,7 @@ fn main() {
             process::check_openclaw_installed,
             process::get_openclaw_version,
             process::check_port_in_use,
+            process::get_node_version,
             // 配置管理
             config::get_config,
             config::save_config,
@@ -67,6 +64,7 @@ fn main() {
             diagnostics::test_channel,
             diagnostics::get_system_info,
             diagnostics::start_channel_login,
+            diagnostics::send_test_message,
             // 安全检测
             diagnostics::run_security_scan,
             diagnostics::fix_security_issues,

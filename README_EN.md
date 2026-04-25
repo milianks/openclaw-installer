@@ -270,6 +270,14 @@ npm run tauri build      # Build full application
 cd src-tauri && cargo check   # Check Rust code
 ```
 
+### npm registry mirror
+
+When installing OpenClaw or skill plugins, Manager defaults npm to `https://registry.npmmirror.com` for better connectivity in mainland China. Override it before launching the app if needed:
+
+```bash
+export OPENCLAW_NPM_REGISTRY=https://registry.npmjs.org
+```
+
 ## 🤝 Contributing
 
 1. Fork the repository
