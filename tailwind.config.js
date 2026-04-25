@@ -8,21 +8,19 @@ export default {
   theme: {
     extend: {
       colors: {
-        // OpenClaw 品牌色
         claw: {
-          50: '#fef3f2',
-          100: '#fee4e2',
-          200: '#ffccc7',
-          300: '#ffa8a0',
-          400: '#ff7a6b',
-          500: '#f94d3a',  // 主色 - 龙虾红
-          600: '#e63024',
-          700: '#c1241a',
-          800: '#a02119',
-          900: '#84221c',
-          950: '#480d09',
+          50: '#fbf1eb',
+          100: '#f6e1d2',
+          200: '#edc2a5',
+          300: '#e39b76',
+          400: '#d7794f',
+          500: '#c95c34',
+          600: '#af4726',
+          700: '#8e381f',
+          800: '#742f1d',
+          900: '#5f281b',
+          950: '#34120b',
         },
-        // 语义化颜色 - 引用 CSS 变量
         surface: {
           app: 'var(--bg-app)',
           sidebar: 'var(--bg-sidebar)',
@@ -43,36 +41,34 @@ export default {
           DEFAULT: 'var(--border-primary)',
           secondary: 'var(--border-secondary)',
         },
-        // 深色主题背景（保留兼容）
         dark: {
-          900: '#0a0a0b',
-          800: '#111113',
-          700: '#1a1a1d',
-          600: '#242428',
-          500: '#2e2e33',
-          400: '#3d3d44',
+          900: '#13110f',
+          800: '#1a1613',
+          700: '#231e1a',
+          600: '#312922',
+          500: '#43372d',
+          400: '#5a493c',
         },
-        // 强调色
         accent: {
-          cyan: '#22d3ee',
-          purple: '#a78bfa',
-          green: '#4ade80',
-          amber: '#fbbf24',
+          cyan: '#2e8f83',
+          purple: '#6f7dd9',
+          green: '#739a52',
+          amber: '#d19539',
         }
       },
       fontFamily: {
         sans: [
+          'Avenir Next',
+          'Segoe UI Variable Display',
           'SF Pro Display',
-          '-apple-system',
-          'BlinkMacSystemFont',
           'PingFang SC',
           'Hiragino Sans GB',
           'Microsoft YaHei',
           'sans-serif',
         ],
         mono: [
-          'SF Mono',
           'JetBrains Mono',
+          'SF Mono',
           'Fira Code',
           'Menlo',
           'monospace',
@@ -87,8 +83,8 @@ export default {
       },
       keyframes: {
         glow: {
-          '0%': { boxShadow: '0 0 5px rgba(249, 77, 58, 0.5)' },
-          '100%': { boxShadow: '0 0 20px rgba(249, 77, 58, 0.8)' },
+          '0%': { boxShadow: '0 0 5px rgba(201, 92, 52, 0.32)' },
+          '100%': { boxShadow: '0 0 20px rgba(201, 92, 52, 0.58)' },
         },
         slideUp: {
           '0%': { transform: 'translateY(10px)', opacity: '0' },
@@ -104,9 +100,9 @@ export default {
         },
       },
       boxShadow: {
-        'glow-claw': '0 0 30px rgba(249, 77, 58, 0.3)',
-        'glow-cyan': '0 0 30px rgba(34, 211, 238, 0.3)',
-        'glow-green': '0 0 30px rgba(74, 222, 128, 0.3)',
+        'glow-claw': '0 0 30px rgba(201, 92, 52, 0.28)',
+        'glow-cyan': '0 0 30px rgba(46, 143, 131, 0.24)',
+        'glow-green': '0 0 30px rgba(115, 154, 82, 0.24)',
         'inner-light': 'inset 0 1px 0 0 rgba(255, 255, 255, 0.05)',
         'card': 'var(--shadow-card)',
       },

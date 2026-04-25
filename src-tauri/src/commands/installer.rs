@@ -60,9 +60,11 @@ pub async fn check_environment() -> Result<EnvironmentStatus, String> {
     // 检查 OpenClaw
     info!("[环境检查] 检查 OpenClaw...");
     let openclaw_version = get_openclaw_version();
-    let openclaw_installed = openclaw_version.is_some();
-    info!("[环境检查] OpenClaw: installed={}, version={:?}", 
-        openclaw_installed, openclaw_version);
+    let openclaw_installed = shell::get_openclaw_path().is_some();
+    info!(
+        "[环境检查] OpenClaw: installed={}, version={:?}",
+        openclaw_installed, openclaw_version
+    );
     
     // 检查配置目录
     let config_dir = platform::get_config_dir();
@@ -226,6 +228,10 @@ fn get_windows_node_paths() -> Vec<String> {
         
         // nvm for Windows 用户安装
         paths.push(format!("{}\\AppData\\Roaming\\nvm\\current\\node.exe", home_str));
+
+        // 官方安装器 / 自定义 current 软链接
+        paths.push(format!("{}\\AppData\\Local\\Programs\\nodejs\\current\\node.exe", home_str));
+        paths.push(format!("{}\\AppData\\Local\\Programs\\nodejs\\node.exe", home_str));
         
         // fnm (Fast Node Manager) for Windows
         paths.push(format!("{}\\AppData\\Roaming\\fnm\\aliases\\default\\node.exe", home_str));
@@ -525,31 +531,19 @@ pub async fn install_openclaw() -> Result<InstallResult, String> {
 
 /// Windows 安装 OpenClaw
 async fn install_openclaw_windows() -> Result<InstallResult, String> {
-    let script = r#"
-$ErrorActionPreference = 'Stop'
+    // 在 Windows 上直接走 cmd + npm.cmd，避免命中 npm.ps1 的 StrictMode / LASTEXITCODE 问题
+    let node_version = shell::run_cmd_output("node --version");
+    if node_version.is_err() {
+        return Ok(InstallResult {
+            success: false,
+            message: "请先安装 Node.js".to_string(),
+            error: Some("找不到 node 命令".to_string()),
+        });
+    }
 
-# 检查 Node.js
-$nodeVersion = node --version 2>$null
-if (-not $nodeVersion) {
-    Write-Host "错误：请先安装 Node.js"
-    exit 1
-}
+    info!("[安装OpenClaw] 使用 npm.cmd 安装 OpenClaw...");
 
-Write-Host "使用 npm 安装 OpenClaw..."
-npm install -g openclaw@latest --unsafe-perm
-
-# 验证安装
-$openclawVersion = openclaw --version 2>$null
-if ($openclawVersion) {
-    Write-Host "OpenClaw 安装成功: $openclawVersion"
-    exit 0
-} else {
-    Write-Host "OpenClaw 安装失败"
-    exit 1
-}
-"#;
-    
-    match shell::run_powershell_output(script) {
+    match shell::run_cmd_output("npm install -g openclaw@latest --unsafe-perm") {
         Ok(output) => {
             if get_openclaw_version().is_some() {
                 Ok(InstallResult {
