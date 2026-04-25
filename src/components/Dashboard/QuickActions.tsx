@@ -26,106 +26,102 @@ export function QuickActions({
   const { t } = useTranslation();
   const isRunning = status?.running || false;
 
+  const actions = [
+    {
+      id: 'start',
+      title: t('quickActions.start', { defaultValue: 'Start' }),
+      description: 'Bring the gateway online',
+      icon: Play,
+      onClick: onStart,
+      disabled: loading || isRunning,
+      tone: 'green',
+    },
+    {
+      id: 'stop',
+      title: t('quickActions.stop', { defaultValue: 'Stop' }),
+      description: 'Stop the active runtime',
+      icon: Square,
+      onClick: onStop,
+      disabled: loading || !isRunning,
+      tone: 'red',
+    },
+    {
+      id: 'restart',
+      title: t('quickActions.restart', { defaultValue: 'Restart' }),
+      description: 'Recycle the process cleanly',
+      icon: RotateCcw,
+      onClick: onRestart,
+      disabled: loading,
+      tone: 'amber',
+    },
+    {
+      id: 'diagnose',
+      title: t('quickActions.diagnose', { defaultValue: 'Diagnose' }),
+      description: 'Inspect logs and health checks',
+      icon: Stethoscope,
+      onClick: undefined,
+      disabled: loading,
+      tone: 'purple',
+    },
+  ] as const;
+
   return (
-    <div className="bg-surface-card rounded-2xl p-6 border border-edge">
-      <h3 className="text-lg font-semibold text-content-primary mb-4">快捷操作</h3>
+    <div
+      className="rounded-[28px] border p-6 md:p-7"
+      style={{
+        background:
+          'linear-gradient(180deg, color-mix(in srgb, var(--bg-card) 92%, transparent), color-mix(in srgb, var(--bg-card-hover) 96%, transparent))',
+        borderColor: 'var(--border-primary)',
+        boxShadow: 'var(--shadow-card)',
+      }}
+    >
+      <div className="mb-5 flex items-end justify-between gap-4">
+        <div>
+          <h3 className="text-2xl font-semibold tracking-tight text-content-primary">
+            {t('quickActions.title', { defaultValue: 'Quick Actions' })}
+          </h3>
+          <p className="mt-1 text-sm text-content-secondary">
+            Core service operations, rebuilt as a proper control deck.
+          </p>
+        </div>
+      </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <button
-          onClick={onStart}
-          disabled={loading || isRunning}
-          className={clsx(
-            'flex flex-col items-center gap-3 p-4 rounded-xl transition-all',
-            'border border-edge',
-            isRunning
-              ? 'bg-surface-elevated opacity-50 cursor-not-allowed'
-              : 'bg-surface-elevated hover:bg-green-500/20 hover:border-green-500/50'
-          )}
-        >
-          <div
-            className={clsx(
-              'w-12 h-12 rounded-full flex items-center justify-center',
-              isRunning ? 'bg-surface-elevated' : 'bg-green-500/20'
-            )}
-          >
-            <Play
-              size={20}
-              className={isRunning ? 'text-content-tertiary' : 'text-green-400'}
-            />
-          </div>
-          <span
-            className={clsx(
-              'text-sm font-medium',
-              isRunning ? 'text-content-tertiary' : 'text-content-secondary'
-            )}
-          >
-            {t('quickActions.start')}
-          </span>
-        </button>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {actions.map((action) => {
+          const Icon = action.icon;
+          const toneClasses =
+            action.tone === 'green'
+              ? 'text-green-600 dark:text-green-400 bg-green-500/10'
+              : action.tone === 'red'
+                ? 'text-red-500 bg-red-500/10'
+                : action.tone === 'amber'
+                  ? 'text-amber-500 bg-amber-500/10'
+                  : 'text-accent-purple bg-accent-purple/10';
 
-        <button
-          onClick={onStop}
-          disabled={loading || !isRunning}
-          className={clsx(
-            'flex flex-col items-center gap-3 p-4 rounded-xl transition-all',
-            'border border-edge',
-            !isRunning
-              ? 'bg-surface-elevated opacity-50 cursor-not-allowed'
-              : 'bg-surface-elevated hover:bg-red-500/20 hover:border-red-500/50'
-          )}
-        >
-          <div
-            className={clsx(
-              'w-12 h-12 rounded-full flex items-center justify-center',
-              !isRunning ? 'bg-surface-elevated' : 'bg-red-500/20'
-            )}
-          >
-            <Square
-              size={20}
-              className={!isRunning ? 'text-content-tertiary' : 'text-red-400'}
-            />
-          </div>
-          <span
-            className={clsx(
-              'text-sm font-medium',
-              !isRunning ? 'text-content-tertiary' : 'text-content-secondary'
-            )}
-          >
-            {t('quickActions.stop')}
-          </span>
-        </button>
-
-        <button
-          onClick={onRestart}
-          disabled={loading}
-          className={clsx(
-            'flex flex-col items-center gap-3 p-4 rounded-xl transition-all',
-            'border border-edge',
-            'bg-surface-elevated hover:bg-amber-500/20 hover:border-amber-500/50'
-          )}
-        >
-          <div className="w-12 h-12 rounded-full flex items-center justify-center bg-amber-500/20">
-            <RotateCcw
-              size={20}
-              className={clsx('text-amber-400', loading && 'animate-spin')}
-            />
-          </div>
-          <span className="text-sm font-medium text-content-secondary">重启</span>
-        </button>
-
-        <button
-          disabled={loading}
-          className={clsx(
-            'flex flex-col items-center gap-3 p-4 rounded-xl transition-all',
-            'border border-edge',
-            'bg-surface-elevated hover:bg-purple-500/20 hover:border-purple-500/50'
-          )}
-        >
-          <div className="w-12 h-12 rounded-full flex items-center justify-center bg-purple-500/20">
-            <Stethoscope size={20} className="text-purple-400" />
-          </div>
-          <span className="text-sm font-medium text-content-secondary">诊断</span>
-        </button>
+          return (
+            <button
+              key={action.id}
+              onClick={action.onClick}
+              disabled={action.disabled || !action.onClick}
+              className={clsx(
+                'group rounded-[24px] border p-5 text-left transition-all duration-200',
+                'disabled:cursor-not-allowed disabled:opacity-55',
+                action.disabled || !action.onClick ? '' : 'hover:-translate-y-1'
+              )}
+              style={{
+                backgroundColor: 'var(--bg-elevated)',
+                borderColor: 'var(--border-secondary)',
+                boxShadow: action.disabled || !action.onClick ? 'none' : 'var(--shadow-card)',
+              }}
+            >
+              <div className={clsx('mb-4 flex h-12 w-12 items-center justify-center rounded-2xl', toneClasses)}>
+                <Icon size={20} className={clsx(action.id === 'restart' && loading ? 'animate-spin' : '')} />
+              </div>
+              <p className="text-base font-semibold text-content-primary">{action.title}</p>
+              <p className="mt-2 text-sm leading-relaxed text-content-secondary">{action.description}</p>
+            </button>
+          );
+        })}
       </div>
     </div>
   );

@@ -13,6 +13,7 @@ import {
   Package
 } from 'lucide-react';
 import { setupLogger } from '../../lib/logger';
+import { BrandMark } from '../BrandMark';
 
 interface EnvironmentStatus {
   node_installed: boolean;
@@ -354,8 +355,11 @@ export function Setup({ onComplete, embedded = false }: SetupProps) {
     return (
       <div className="bg-gradient-to-br from-yellow-500/10 to-orange-500/10 border border-yellow-500/30 rounded-2xl p-6">
         <div className="flex items-start gap-4 mb-4">
-          <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-500 to-orange-500 flex items-center justify-center">
-            <span className="text-2xl">⚠️</span>
+          <div className="relative overflow-hidden text-transparent flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-500 to-orange-500 flex items-center justify-center p-2">
+            <div className="absolute inset-2">
+              <BrandMark className="h-full w-full" />
+            </div>
+            <span className="sr-only">warning</span>
           </div>
           <div>
             <h2 className="text-lg font-bold text-content-primary mb-1">环境配置</h2>
@@ -389,9 +393,12 @@ export function Setup({ onComplete, embedded = false }: SetupProps) {
             initial={{ scale: 0.8 }}
             animate={{ scale: 1 }}
             transition={{ type: 'spring', damping: 15 }}
-            className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-brand-500 to-purple-600 mb-4 shadow-lg shadow-brand-500/25"
+            className="relative overflow-hidden text-transparent inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-brand-500 to-purple-600 mb-4 shadow-lg shadow-brand-500/25 p-3"
           >
-            <span className="text-4xl">🦞</span>
+            <div className="absolute inset-3">
+              <BrandMark className="h-full w-full" />
+            </div>
+            <span className="sr-only">OpenClaw Manager</span>
           </motion.div>
           <h1 className="text-2xl font-bold text-content-primary mb-2">虾池子</h1>
           <p className="text-dark-400">环境检测与安装向导</p>

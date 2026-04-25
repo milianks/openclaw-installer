@@ -12,6 +12,7 @@ use std::os::windows::process::CommandExt;
 const CREATE_NO_WINDOW: u32 = 0x08000000;
 
 const SERVICE_PORT: u16 = 18789;
+const SERVICE_START_TIMEOUT_SECS: u64 = 60;
 
 /// 检测端口是否有服务在监听，返回 PID
 /// 简单直接：端口被占用 = 服务运行中
@@ -99,21 +100,28 @@ pub async fn start_service() -> Result<String, String> {
     shell::spawn_openclaw_gateway()
         .map_err(|e| format!("启动服务失败: {}", e))?;
     
-    // 轮询等待端口开始监听（最多 15 秒）
-    info!("[服务] 等待端口 {} 开始监听...", SERVICE_PORT);
-    for i in 1..=15 {
+    // 首次启动 OpenClaw 可能会安装/初始化插件运行时，15 秒在 Windows 上不够。
+    info!(
+        "[服务] 等待端口 {} 开始监听（最多 {} 秒）...",
+        SERVICE_PORT,
+        SERVICE_START_TIMEOUT_SECS
+    );
+    for i in 1..=SERVICE_START_TIMEOUT_SECS {
         std::thread::sleep(std::time::Duration::from_secs(1));
         if let Some(pid) = check_port_listening(SERVICE_PORT) {
             info!("[服务] ✓ 启动成功 ({}秒), PID: {}", i, pid);
             return Ok(format!("服务已启动，PID: {}", pid));
         }
-        if i % 3 == 0 {
+        if i % 5 == 0 {
             debug!("[服务] 等待中... ({}秒)", i);
         }
     }
     
     info!("[服务] 等待超时，端口仍未监听");
-    Err("服务启动超时（15秒），请检查 openclaw 日志".to_string())
+    Err(format!(
+        "服务启动超时（{}秒），请检查 openclaw 日志",
+        SERVICE_START_TIMEOUT_SECS
+    ))
 }
 
 /// 获取监听指定端口的所有 PID

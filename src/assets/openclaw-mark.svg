@@ -1,0 +1,29 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="32" y1="24" x2="224" y2="232" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0F172A"/>
+      <stop offset="0.58" stop-color="#18243D"/>
+      <stop offset="1" stop-color="#27385E"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="68" y1="54" x2="190" y2="202" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F59E0B"/>
+      <stop offset="1" stop-color="#EA580C"/>
+    </linearGradient>
+    <linearGradient id="badge" x1="58" y1="48" x2="208" y2="210" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.04"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="16" y="16" width="224" height="224" rx="56" fill="url(#bg)"/>
+  <rect x="28" y="28" width="200" height="200" rx="44" fill="url(#badge)" stroke="#FFFFFF" stroke-opacity="0.10"/>
+
+  <circle cx="128" cy="128" r="78" fill="url(#accent)"/>
+  <circle cx="128" cy="128" r="62" fill="#FFF7ED" fill-opacity="0.16"/>
+
+  <path d="M144 92V142C144 166.301 124.301 186 100 186C75.6995 186 56 166.301 56 142V114L82 140" stroke="#FFF8F1" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M128 76C128 64.9543 136.954 56 148 56C159.046 56 168 64.9543 168 76C168 87.0457 159.046 96 148 96C136.954 96 128 87.0457 128 76Z" stroke="#FFF8F1" stroke-width="18"/>
+  <path d="M148 56V40" stroke="#FFF8F1" stroke-width="18" stroke-linecap="round"/>
+
+  <path d="M180 178C180 186.837 172.837 194 164 194C155.163 194 148 186.837 148 178C148 169.163 155.163 162 164 162C172.837 162 180 169.163 180 178Z" fill="#0F172A" fill-opacity="0.22"/>
+</svg>

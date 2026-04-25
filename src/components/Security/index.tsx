@@ -211,7 +211,7 @@ export function Security() {
                             </div>
                             <div>
                                 <h3 className="text-lg font-bold text-content-primary mb-1">
-                                    ⚠️ 安全风险提醒
+                                    安全风险提醒
                                 </h3>
                                 <p className="text-sm text-content-secondary leading-relaxed">
                                     OpenClaw 拥有<span className="text-red-400 font-medium">读写文件、发送消息、执行代码</span>等强大权限。
