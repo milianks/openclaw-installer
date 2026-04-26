@@ -247,31 +247,20 @@ function App() {
               initial={{ opacity: 0, y: -50 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -50 }}
-              className="fixed top-4 left-1/2 z-50 w-[min(960px,calc(100vw-2rem))] -translate-x-1/2 overflow-hidden rounded-2xl border shadow-2xl backdrop-blur-xl titlebar-no-drag pointer-events-auto"
+              className="fixed top-4 left-1/2 z-50 w-[min(760px,calc(100vw-2rem))] -translate-x-1/2 overflow-hidden rounded-2xl border shadow-2xl backdrop-blur-xl titlebar-no-drag pointer-events-auto"
               style={{
-                background: 'linear-gradient(135deg, rgba(111, 125, 217, 0.92), rgba(201, 92, 52, 0.92))',
+                background: 'linear-gradient(135deg, rgba(111, 125, 217, 0.94), rgba(201, 92, 52, 0.9))',
                 borderColor: 'rgba(255,255,255,0.18)',
               }}
             >
-              <button
-                onClick={() => {
-                  setShowUpdateBanner(false);
-                  setUpdateResult(null);
-                }}
-                aria-label="Close update banner"
-                className="titlebar-no-drag pointer-events-auto absolute top-3 right-3 z-10 inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/18 bg-white/12 text-white transition-colors hover:bg-white/20"
-              >
-                <X size={18} />
-              </button>
-
-              <div className="titlebar-no-drag pointer-events-auto px-5 py-4 pr-16">
+              <div className="titlebar-no-drag pointer-events-auto px-5 py-4">
                 <div className="min-w-0 flex items-start gap-3">
                   {updateResult?.success ? (
-                    <CheckCircle size={20} className="text-green-200" />
+                    <CheckCircle size={20} className="mt-0.5 shrink-0 text-green-200" />
                   ) : updateResult && !updateResult.success ? (
-                    <AlertCircle size={20} className="text-red-200" />
+                    <AlertCircle size={20} className="mt-0.5 shrink-0 text-red-200" />
                   ) : (
-                    <Download size={20} className="text-white" />
+                    <Download size={20} className="mt-0.5 shrink-0 text-white" />
                   )}
                   <div className="min-w-0 flex-1">
                     {updateResult ? (
@@ -286,7 +275,7 @@ function App() {
                             defaultValue: `New version available: OpenClaw ${updateInfo.latest_version}`,
                           })}
                         </p>
-                        <p className="truncate text-xs text-white/70">
+                        <p className="mt-1 truncate text-xs text-white/70">
                           {t('app.currentVersion', {
                             version: updateInfo.current_version,
                             defaultValue: `Current version: ${updateInfo.current_version}`,
@@ -297,8 +286,8 @@ function App() {
                   </div>
                 </div>
 
-                {!updateResult && (
-                  <div className="mt-3">
+                <div className="mt-4 flex flex-wrap items-center gap-2">
+                  {!updateResult && (
                     <button
                       onClick={handleUpdate}
                       disabled={updating}
@@ -316,8 +305,20 @@ function App() {
                         </>
                       )}
                     </button>
-                  </div>
-                )}
+                  )}
+
+                  <button
+                    onClick={() => {
+                      setShowUpdateBanner(false);
+                      setUpdateResult(null);
+                    }}
+                    aria-label="Close update banner"
+                    className="titlebar-no-drag pointer-events-auto inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-white/18"
+                  >
+                    <X size={14} />
+                    <span>关闭</span>
+                  </button>
+                </div>
               </div>
             </motion.div>
           )}
