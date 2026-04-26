@@ -777,7 +777,7 @@ Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
 Write-Host "正在安装 OpenClaw..." -ForegroundColor Yellow
-npm install -g openclaw@latest
+npm.cmd install -g openclaw@latest
 
 Write-Host ""
 Write-Host "初始化配置..."
